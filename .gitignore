@@ -1,4 +1,6 @@
 node_modules/
+backup/
+*.bak
 dist/
 build/
 .env
@@ -8,3 +10,7 @@ build/
 .DS_Store
 .idea/
 .vscode/
+.gradle/
+android/.gradle/
+android/local.properties
+android/**/build/

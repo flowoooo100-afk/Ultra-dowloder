@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090e18">
+    <title>Ultra Downloader</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+    <header class="top-header">
+        <div class="brand">
+            <div class="brand-icon">U</div>
+            <div>
+                <h1>ULTRA<span>DOWNLOADER</span></h1>
+                <p>Everything you need, faster.</p>
+            </div>
+        </div>
+        <button class="profile-btn" aria-label="Profile">●</button>
+    </header>
+
+    <main>
+
+        <section class="welcome">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2>What do you want<br>to <span>download?</span></h2>
+        </section>
+
+        <section class="search-section">
+            <form id="searchForm">
+                <span class="search-icon">⌕</span>
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search or enter website URL"
+                    autocomplete="off">
+                <button type="submit">GO</button>
+            </form>
+        </section>
+
+        <section class="quick-actions">
+            <div class="section-heading">
+                <h3>Quick access</h3>
+            </div>
+
+            <div class="action-grid">
+                <button class="action-card" data-action="browser">
+                    <span class="action-icon">◎</span>
+                    <span>Browser</span>
+                </button>
+
+                <button class="action-card" data-action="downloads">
+                    <span class="action-icon">↓</span>
+                    <span>Downloads</span>
+                </button>
+
+                <button class="action-card" data-action="files">
+                    <span class="action-icon">▣</span>
+                    <span>My Files</span>
+                </button>
+
+                <button class="action-card" data-action="settings">
+                    <span class="action-icon">⚙</span>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="discovery">
+            <div class="section-heading">
+                <h3>Discover</h3>
+                <span class="section-label">EXPLORE</span>
+            </div>
+
+            <div class="discovery-card">
+                <div>
+                    <span class="card-tag">ULTRA BROWSER</span>
+                    <h3>Your web.<br>Your control.</h3>
+                    <p>Browse the internet with Ultra Downloader.</p>
+                    <button class="explore-btn" data-action="browser">
+                        Open browser →
+                    </button>
+                </div>
+                <div class="discovery-art">U</div>
+            </div>
+        </section>
+
+        <section class="recent">
+            <div class="section-heading">
+                <h3>Recent downloads</h3>
+                <button data-action="downloads">See all →</button>
+            </div>
+
+            <div class="empty-state">
+                <div class="empty-icon">↓</div>
+                <h4>No downloads yet</h4>
+                <p>Your downloaded files will appear here.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-action="home">
+            <span>⌂</span>
+            <small>Home</small>
+        </button>
+        <button class="nav-item" data-action="browser">
+            <span>◎</span>
+            <small>Browser</small>
+        </button>
+        <button class="nav-item" data-action="downloads">
+            <span>↓</span>
+            <small>Downloads</small>
+        </button>
+        <button class="nav-item" data-action="files">
+            <span>▣</span>
+            <small>Files</small>
+        </button>
+        <button class="nav-item" data-action="settings">
+            <span>⚙</span>
+            <small>Settings</small>
+        </button>
+    </nav>
+
+</div>
+
+<script src="capacitor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
