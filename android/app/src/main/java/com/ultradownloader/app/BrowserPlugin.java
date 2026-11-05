@@ -13,7 +13,7 @@ import android.webkit.WebSettings;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-
+import android.widget.Toast;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
