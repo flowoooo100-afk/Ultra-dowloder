@@ -122,37 +122,35 @@ public class BrowserPlugin extends Plugin {
                     addressBar.setText(url);
 
                     String script =
-                        "(function() {" +
-                        "const sent = new Set();" +
-                        "function scan() {" +
-                        "document.querySelectorAll('video').forEach(v => {" +
-                        "if (!v.dataset.ultraTracked) {" +
-                        "v.dataset.ultraTracked='1';" +
-                        "v.addEventListener('playing',function(){" +
-                        "report(v.currentSrc||v.src,'playing');" +
-                        "});" +
-                        "}" +
-                        "report(v.currentSrc||v.src,'found');" +
-                        "v.querySelectorAll('source').forEach(s=>" +
-                        "report(s.src,'found'));" +
-                        "});" +
-                        "}" +
-                        "function report(u,status) {" +
-                        "if(!u)return;" +
-                        "try {" +
-                        "u=new URL(u,location.href).href;" +
-                        "if(!/^https?:/.test(u))return;" +
-                        "if(!/\\.(mp4|webm|m4v|mov)(?:$|[?#])/i.test(u))return;" +
-                        "if(status==='found'&&sent.has(u))return;" +
-                        "sent.add(u);" +
-                        "UltraVideoBridge.onVideoDetected(status,u);" +
-                        "}catch(e){}" +
-                        "}" +
-                        "scan();" +
-                        "setInterval(scan,1500);" +
-                        "})();";
+    "(function() {" +
+    "function report(u,status) {" +
+    "if(!u)return;" +
+    "try {" +
+    "u=new URL(u,location.href).href;" +
+    "if(!/^https?:/.test(u))return;" +
+    "if(!/\\.(mp4|webm|m4v|mov)(?:$|[?#])/i.test(u))return;" +
+    "UltraVideoBridge.onVideoDetected(status,u);" +
+    "}catch(e){}" +
+    "}" +
+    "function scan() {" +
+    "document.querySelectorAll('video').forEach(function(v) {" +
+    "report(v.currentSrc||v.src,'found');" +
+    "v.querySelectorAll('source').forEach(function(s) {" +
+    "report(s.src,'found');" +
+    "});" +
+    "if(!v.dataset.ultraTracked) {" +
+    "v.dataset.ultraTracked='1';" +
+    "v.addEventListener('playing',function() {" +
+    "report(v.currentSrc||v.src,'playing');" +
+    "});" +
+    "}" +
+    "});" +
+    "}" +
+    "scan();" +
+    "setInterval(scan,1500);" +
+    "})();";
 
-                    view.evaluateJavascript(script, null);
+view.evaluateJavascript(script, null);
                 }
             });
 
