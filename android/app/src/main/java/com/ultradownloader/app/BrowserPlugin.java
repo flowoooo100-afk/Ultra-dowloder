@@ -3,8 +3,10 @@ package com.ultradownloader.app;
 import android.app.Dialog;
 import android.graphics.Color;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -21,7 +23,41 @@ public class BrowserPlugin extends Plugin {
 
     private WebView webView;
     private EditText addressBar;
+private Button downloadButton;
+private boolean videoDetected = false;
 
+private class VideoBridge {
+
+    @JavascriptInterface
+    public void onVideoDetected(String status) {
+
+        getActivity().runOnUiThread(() -> {
+
+            if (status.equals("playing")) {
+                videoDetected = true;
+                downloadButton.setText("VIDEO PLAYING");
+                downloadButton.setVisibility(View.VISIBLE);
+                downloadButton.setEnabled(true);
+                downloadButton.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(
+                        Color.rgb(30, 160, 90)
+                    )
+                );
+
+            } else if (status.equals("found")) {
+                videoDetected = true;
+                downloadButton.setText("VIDEO FOUND");
+                downloadButton.setVisibility(View.VISIBLE);
+                downloadButton.setEnabled(true);
+                downloadButton.setBackgroundTintList(
+                    android.content.res.ColorStateList.valueOf(
+                        Color.rgb(35, 110, 200)
+                    )
+                );
+            }
+        });
+    }
+}
     @PluginMethod
     public void openBrowser(PluginCall call) {
 
@@ -49,13 +85,30 @@ public class BrowserPlugin extends Plugin {
             addressBar.setText(initialUrl);
 
             Button go = new Button(getActivity());
-            go.setText("GO");
+go.setText("GO");
 
-            toolbar.addView(addressBar,
-                new LinearLayout.LayoutParams(0, 55, 1));
-            toolbar.addView(go);
+downloadButton = new Button(getActivity());
+downloadButton.setText("NO VIDEO");
+downloadButton.setEnabled(false);
+downloadButton.setTextColor(Color.WHITE);
+downloadButton.setBackgroundTintList(
+    android.content.res.ColorStateList.valueOf(
+        Color.rgb(70, 75, 90)
+    )
+);
+downloadButton.setVisibility(View.GONE);
+
+toolbar.addView(addressBar,
+    new LinearLayout.LayoutParams(0, 55, 1));
+
+toolbar.addView(go);
+toolbar.addView(downloadButton);
 
             webView = new WebView(getActivity());
+
+           webView.addJavascriptInterface(
+           new VideoBridge(), "UltraVideoBridge"
+);
 
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
@@ -65,6 +118,19 @@ public class BrowserPlugin extends Plugin {
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     addressBar.setText(url);
+view.evaluateJavascript(
+    "(function() {" +
+    "document.querySelectorAll('video').forEach(function(v) {" +
+    "if(v.dataset.ultraTracked) return;" +
+    "v.dataset.ultraTracked = '1';" +
+    "UltraVideoBridge.onVideoDetected('found');" +
+    "v.addEventListener('playing', function() {" +
+    "UltraVideoBridge.onVideoDetected('playing');" +
+    "});" +
+    "});" +
+    "})();",
+    null
+);
                 }
             });
 
