@@ -16,48 +16,51 @@ import android.widget.LinearLayout;
 
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginMethod;
+import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin;
+import android.app.DownloadManager;
+import android.content.Context;
+import android.os.Environment;
+import android.webkit.CookieManager;
+import android.webkit.URLUtil;
+import android.widget.FrameLayout;
+
 @CapacitorPlugin(name = "NativeBrowser")
 public class BrowserPlugin extends Plugin {
 
     private WebView webView;
     private EditText addressBar;
-private Button downloadButton;
-private boolean videoDetected = false;
+    private Button downloadButton;
+    private String detectedVideoUrl;
 
-private class VideoBridge {
+    private class VideoBridge {
 
-    @JavascriptInterface
-    public void onVideoDetected(String status) {
+        @JavascriptInterface
+        public void onVideoDetected(String status, String url) {
 
-        getActivity().runOnUiThread(() -> {
+            getActivity().runOnUiThread(() -> {
 
-            if (status.equals("playing")) {
-                videoDetected = true;
-                downloadButton.setText("VIDEO PLAYING");
+                if (url == null ||
+                    !(url.startsWith("https://") ||
+                      url.startsWith("http://"))) return;
+
+                detectedVideoUrl = url;
+
                 downloadButton.setVisibility(View.VISIBLE);
                 downloadButton.setEnabled(true);
-                downloadButton.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(
-                        Color.rgb(30, 160, 90)
-                    )
-                );
+                downloadButton.setText("↓");
 
-            } else if (status.equals("found")) {
-                videoDetected = true;
-                downloadButton.setText("VIDEO FOUND");
-                downloadButton.setVisibility(View.VISIBLE);
-                downloadButton.setEnabled(true);
                 downloadButton.setBackgroundTintList(
                     android.content.res.ColorStateList.valueOf(
-                        Color.rgb(35, 110, 200)
+                        status.equals("playing")
+                            ? Color.rgb(20, 190, 105)
+                            : Color.rgb(35, 110, 220)
                     )
                 );
-            }
-        });
+            });
+        }
     }
-}
+
     @PluginMethod
     public void openBrowser(PluginCall call) {
 
@@ -85,52 +88,71 @@ private class VideoBridge {
             addressBar.setText(initialUrl);
 
             Button go = new Button(getActivity());
-go.setText("GO");
+            go.setText("GO");
 
-downloadButton = new Button(getActivity());
-downloadButton.setText("NO VIDEO");
-downloadButton.setEnabled(false);
-downloadButton.setTextColor(Color.WHITE);
-downloadButton.setBackgroundTintList(
-    android.content.res.ColorStateList.valueOf(
-        Color.rgb(70, 75, 90)
-    )
-);
-downloadButton.setVisibility(View.GONE);
+            toolbar.addView(addressBar,
+                new LinearLayout.LayoutParams(0, 55, 1));
 
-toolbar.addView(addressBar,
-    new LinearLayout.LayoutParams(0, 55, 1));
-
-toolbar.addView(go);
-toolbar.addView(downloadButton);
+            toolbar.addView(go);
 
             webView = new WebView(getActivity());
 
-           webView.addJavascriptInterface(
-           new VideoBridge(), "UltraVideoBridge"
-);
+            webView.addJavascriptInterface(
+                new VideoBridge(), "UltraVideoBridge"
+            );
 
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setDomStorageEnabled(true);
 
             webView.setWebViewClient(new WebViewClient() {
+
+                @Override
+                public void onPageStarted(
+                    WebView view, String url,
+                    android.graphics.Bitmap favicon
+                ) {
+                    detectedVideoUrl = null;
+                    downloadButton.setVisibility(View.GONE);
+                }
+
                 @Override
                 public void onPageFinished(WebView view, String url) {
+
                     addressBar.setText(url);
-view.evaluateJavascript(
-    "(function() {" +
-    "document.querySelectorAll('video').forEach(function(v) {" +
-    "if(v.dataset.ultraTracked) return;" +
-    "v.dataset.ultraTracked = '1';" +
-    "UltraVideoBridge.onVideoDetected('found');" +
-    "v.addEventListener('playing', function() {" +
-    "UltraVideoBridge.onVideoDetected('playing');" +
-    "});" +
-    "});" +
-    "})();",
-    null
-);
+
+                    String script =
+                        "(function() {" +
+                        "const sent = new Set();" +
+                        "function scan() {" +
+                        "document.querySelectorAll('video').forEach(v => {" +
+                        "if (!v.dataset.ultraTracked) {" +
+                        "v.dataset.ultraTracked='1';" +
+                        "v.addEventListener('playing',function(){" +
+                        "report(v.currentSrc||v.src,'playing');" +
+                        "});" +
+                        "}" +
+                        "report(v.currentSrc||v.src,'found');" +
+                        "v.querySelectorAll('source').forEach(s=>" +
+                        "report(s.src,'found'));" +
+                        "});" +
+                        "}" +
+                        "function report(u,status) {" +
+                        "if(!u)return;" +
+                        "try {" +
+                        "u=new URL(u,location.href).href;" +
+                        "if(!/^https?:/.test(u))return;" +
+                        "if(!/\\.(mp4|webm|m4v|mov)(?:$|[?#])/i.test(u))return;" +
+                        "if(status==='found'&&sent.has(u))return;" +
+                        "sent.add(u);" +
+                        "UltraVideoBridge.onVideoDetected(status,u);" +
+                        "}catch(e){}" +
+                        "}" +
+                        "scan();" +
+                        "setInterval(scan,1500);" +
+                        "})();";
+
+                    view.evaluateJavascript(script, null);
                 }
             });
 
@@ -143,21 +165,53 @@ view.evaluateJavascript(
                 return true;
             });
 
+            // Browser content and floating button
+            FrameLayout browserFrame = new FrameLayout(getActivity());
+
+            browserFrame.addView(webView,
+                new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                ));
+
+            downloadButton = new Button(getActivity());
+            downloadButton.setText("↓");
+            downloadButton.setTextSize(28);
+            downloadButton.setTextColor(Color.WHITE);
+            downloadButton.setAllCaps(false);
+            downloadButton.setVisibility(View.GONE);
+            downloadButton.setEnabled(false);
+            downloadButton.setElevation(12);
+
+            FrameLayout.LayoutParams buttonParams =
+                new FrameLayout.LayoutParams(
+                    58, 58, Gravity.BOTTOM | Gravity.END
+                );
+
+            buttonParams.setMargins(0, 0, 20, 28);
+
+            browserFrame.addView(downloadButton, buttonParams);
+
+            downloadButton.setOnClickListener(v ->
+                downloadDetectedVideo()
+            );
+
             layout.addView(toolbar);
 
-            layout.addView(webView,
+            layout.addView(browserFrame,
                 new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+                    ViewGroup.LayoutParams.MATCH_PARENT, 0, 1
+                ));
 
             dialog.setContentView(layout);
             dialog.show();
 
             dialog.getWindow().setLayout(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT);
+                ViewGroup.LayoutParams.MATCH_PARENT
+            );
 
             loadAddress();
-
             call.resolve();
         });
     }
@@ -180,5 +234,67 @@ view.evaluateJavascript(
         }
 
         webView.loadUrl(url);
+    }
+
+    private void downloadDetectedVideo() {
+
+        if (detectedVideoUrl == null) {
+            Toast.makeText(getActivity(),
+                "No supported video detected",
+                Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+
+            DownloadManager manager =
+                (DownloadManager) getActivity().getSystemService(
+                    Context.DOWNLOAD_SERVICE
+                );
+
+            String filename = URLUtil.guessFileName(
+                detectedVideoUrl, null, "video/mp4"
+            );
+
+            DownloadManager.Request request =
+                new DownloadManager.Request(
+                    android.net.Uri.parse(detectedVideoUrl)
+                );
+
+            request.setTitle(filename);
+            request.setDescription("Ultra Downloader");
+            request.setNotificationVisibility(
+                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            );
+
+            String cookies = CookieManager.getInstance()
+                .getCookie(detectedVideoUrl);
+
+            if (cookies != null) {
+                request.addRequestHeader("Cookie", cookies);
+            }
+
+            request.addRequestHeader("Referer", webView.getUrl());
+            request.addRequestHeader(
+                "User-Agent",
+                webView.getSettings().getUserAgentString()
+            );
+
+            request.setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS, filename
+            );
+
+            manager.enqueue(request);
+
+            Toast.makeText(getActivity(),
+                "Download started!",
+                Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+
+            Toast.makeText(getActivity(),
+                "Download failed: " + e.getMessage(),
+                Toast.LENGTH_LONG).show();
+        }
     }
 }
